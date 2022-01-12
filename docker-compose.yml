@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  # Start the database server.
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: 'shopify'
+
+  db-up:
+    image: busybox
+    depends_on:
+      - db
+    command: sh -c 'while ! nc -z db 5432; do sleep 1; done; echo "[db-up] OK"'
+    restart: 'no'
+
+  # Create the schema for our application (uses golang-migrate/migrate').
+  migrate:
+    image: migrate/migrate
+    volumes:
+        - ./db:/migrations
+    command: ['-path', '/migrations', '-database',  'postgres://${DB_USER}:${DB_PASS}@db:5432/shopify?sslmode=disable', 'up']
+    depends_on: 
+      db-up:
+        condition: service_completed_successfully

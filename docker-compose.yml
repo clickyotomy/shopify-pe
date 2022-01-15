@@ -4,7 +4,7 @@ services:
   # Start the database server.
   db:
     image: postgres
-    restart: always
+    restart: 'no'
     ports:
       - '5432:5432'
     environment:
@@ -12,6 +12,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: 'shopify'
 
+  # Check if the database is up and running.
   db-up:
     image: busybox
     depends_on:
@@ -24,7 +25,36 @@ services:
     image: migrate/migrate
     volumes:
         - ./db:/migrations
-    command: ['-path', '/migrations', '-database',  'postgres://${DB_USER}:${DB_PASS}@db:5432/shopify?sslmode=disable', 'up']
+    command: ['-path', '/migrations', '-database', 'postgres://${DB_USER}:${DB_PASS}@db:5432/shopify?sslmode=disable', 'up']
     depends_on: 
       db-up:
         condition: service_completed_successfully
+
+  # Build and start the API server binary.
+  api:
+    build: .
+    restart: 'no'
+    ports:
+      - "8080:8080"
+    command: ["-port", "8080", "-dbhost", "db", "-dbport", "5432", "-dbname", "shopify", "-dbuser", "${DB_USER}", "-dbpass", "${DB_PASS}"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Setup a proxy server for the client web-app.
+  app:
+    image: nginx:latest
+    restart: 'no'
+    volumes:
+      - ./proxy:/etc/nginx/templates
+      - ./client:/www/html
+    ports:
+      - "8000:8000"
+    command: [nginx-debug, '-g', 'daemon off;']
+    environment:
+      # - NGINX_HOST=foobar.com
+      - NGINX_PORT=8000
+      - API_PORT=8080
+    depends_on:
+      - api
+

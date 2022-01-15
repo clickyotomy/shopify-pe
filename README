@@ -1,0 +1,47 @@
+shopify-pe
+----------
+
+A tiny inventory management web-application.
+
+
+DESCRIPTION
+
+	The API back-end for this application is written in `go'. It handles
+	routes to perform CRUD operations on the inventory database (which
+	is on `postgres') and also stores and manages dynamic thumbnail
+	generated for the uploaded images. The front-end of the application
+	is written in HTML and some JavaScript.
+
+
+DIRECTORY STRUCTURE
+
+	- client/*html
+		HTML files to interact with the API backend.
+
+	- db/*.sql
+		Schema files for the database.
+
+	- proxy/*
+		Configuration files (`nginx') for the front-end proxy.
+
+	- server/*.go
+		API backend implementation. This is deployed as a `docker'
+		image with the `Dockerfile' in the repository root.
+
+	- docker-compose.yml
+		Configuration file for `docker-compose' to pull, and build all
+		the necessary `docker' images to start the application.
+
+	- .env
+		For environment variables.
+
+
+HOW-TO
+
+	To run the application, clone this repository and run:
+		
+		$ docker compose up --build
+
+	... at the repository root. Note that this requires "docker" to be
+	installed on the machine.
+

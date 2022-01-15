@@ -6,10 +6,10 @@ A tiny inventory management web-application.
 
 DESCRIPTION
 
-	The API back-end for this application is written in `go'. It handles
+	The API backend for this application is written in `go'. It handles
 	routes to perform CRUD operations on the inventory database (which
 	is on `postgres') and also stores and manages dynamic thumbnail
-	generated for the uploaded images. The front-end of the application
+	generated for the uploaded images. The frontend of the application
 	is written in HTML and some JavaScript.
 
 
@@ -22,7 +22,7 @@ DIRECTORY STRUCTURE
 		Schema files for the database.
 
 	- proxy/*
-		Configuration files (`nginx') for the front-end proxy.
+		Configuration files (`nginx') for the frontend proxy.
 
 	- server/*.go
 		API backend implementation. This is deployed as a `docker'
@@ -43,5 +43,122 @@ HOW-TO
 		$ docker compose up --build
 
 	... at the repository root. Note that this requires "docker" to be
-	installed on the machine.
+	installed on the machine. The above command will show the logs for
+	application start-up as well as any API requests received by the
+	backend.
 
+	To use the application, visit http://localhost:8000 in the browser.
+	Hit ^ (CRTL) + C to stop the application.
+
+
+
+API DOCUMENTATION
+
+	The API backend run on port 8080 by default and implements the
+	following routes:
+
+		- POST /api/add
+			Adds an item to the inventory.
+
+			POST payload (application/json):
+
+				{
+					"item_name": "A name for the item.",
+					"item_desc": "A brief description of the item.",
+					"item_count": "Number of items; must be an integer.",
+					"item_price": "Price per unit; must be a number.",
+					"item_brand": "Manufacturer of the item."
+					"image_base64": "Base64 encoded string of the image file."
+				}
+
+			On success, the API will respond with a 201. Example:
+				{
+					"data":{
+						"item_id": "WZ1CBcfC"
+					},
+					"error": null
+				}
+
+		- GET /api/get/:item_id
+			Fetch the details of the given item with ID "item_id".
+
+			On success, the details of the item are returned with a
+			200. Example:
+
+			{
+				data: {
+					item_id: "WZ1CBcfC",
+					created_at: "2022-01-15T22:52:29.226202Z",
+					updated_at: "2022-01-15T22:52:29.226202Z",
+					item_count: 1,
+					item_price: 42,
+					item_brand: "Disney Inc.",
+					item_name: "Darth Vader Suit",
+					item_desc: "This is the real deal."
+				},
+					error: null
+				}
+
+		- GET /api/list
+			List all the items in the invertory.
+
+			On success, the list is returned with a 200. Example:
+
+			{
+				data: [
+					{
+						item_id: "neWkGQLh",
+						created_at: "2022-01-15T22:56:29.960512Z",
+						updated_at: "2022-01-15T22:56:29.960512Z",
+						item_count: 10,
+						item_price: 34,
+						item_brand: "Nintendo",
+						item_name: "Pixel Art",
+						item_desc: "All the pixels."
+					},
+					{
+						item_id: "FLic6vfP",
+						created_at: "2022-01-15T22:56:23.752321Z",
+						updated_at: "2022-01-15T22:56:23.752321Z",
+						item_count: 1,
+						item_price: 42,
+						item_brand: "Disney Inc.",
+						item_name: "Darth Vader Suit",
+						item_desc: "This is the real deal."
+					},				
+					/* ... */
+				]
+
+		- PUT /api/update/:item_id?update_field=field_to_update
+			Updates a specific field for an item. The field to be updated
+			should be specified in the "update_field" query string parameter,
+			and the payload should be as follows:
+
+				{
+					"field_to_be_updated": "New Data."
+				}
+
+			On success, the API responds with a 201. Example:
+				{
+					"data": {
+						"item_id":"FLic6vfP"
+					},
+					"error": null
+				}
+
+		- DELETE /api/delete/:item_id
+			Delete an item with ID "item_id" from the inventory.
+
+			On success, the API responds with a 200. Example:
+				{
+					"data": "OK",
+					"error": null
+				}
+
+		- GET /img/:item_id[?h=H&w=W]
+			Returns the image for an item bearing the ID "item_id". If
+			the "h" and "w" query strings are specified, the API generates
+			a thumbnail with resolution h x w pixels. The aspect ratio from
+			the original image is maintained.
+
+			On success, it responds with a 200 with the image file.

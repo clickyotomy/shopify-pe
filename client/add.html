@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="utf-8">
+	<title>Shopify: Add Item</title>
+	<style>
+		button.updn {
+			background: none;
+			border: none;
+			width: 5px;
+		}
+
+		table, th, td {
+			border: 1px solid black;
+			text-align: left;
+			vertical-align: top;
+		}
+	</style>
+	<script type="text/javascript">
+		function handle(response) {
+			if (!response.ok) {
+				throw Error(response.json());
+			}
+			return response.json();
+		}
+
+		function add() {
+			var url = new URL('http://localhost:8080/api/add');
+			var itemName = document.querySelector("input[id=item_name]").value;
+			var itemBrand = document.querySelector("input[id=item_brand]").value;
+			var ItemDesc = document.querySelector("textarea[id=item_desc]").value;
+			var itemPrice = document.querySelector("input[id=item_price]").value;
+			var ItemCount = document.querySelector("input[id=item_count]").value;
+			var ImageBase64 = document.querySelector('input[id="image_base64"]').files[0];
+			var reader = new FileReader();
+			reader.readAsDataURL(ImageBase64);
+			reader.onload = function () {
+				var payload = {};
+				console.log(reader.result.split(',')[1]);
+				payload['item_name'] = itemName;
+				payload['item_brand'] = itemBrand;
+				payload['item_desc'] = ItemDesc;
+				payload['item_price'] = parseFloat(itemPrice);
+				payload['item_count'] = parseInt(ItemCount);
+				payload['image_base64'] = reader.result.split(',')[1];
+
+				fetch(url, {
+					method: 'POST',
+					body: JSON.stringify(payload),
+					headers: {
+						'Origin': 'localhost',
+					}
+				})
+				.then(handle)
+				.then(data => {
+					window.location.replace(`http://localhost:8000/item?item_id=${data.data.item_id}`);
+				})
+				.catch(error => {
+					console.log(error);
+				});
+			};
+
+			reader.onerror = function (error) {
+				console.log(error);
+			};
+		}
+	</script>
+</head>
+<body>
+	<h2 style="width: 1024px;">Shopify: Add Item</h2>
+	<form>
+		<div class="item_info_holder" style="width: 512px; display: inline-block;">
+			<table>
+			<tr>
+				<td>Name</td>
+				<td>
+					<input id="item_name" style="width: 512px;" type="text"/>
+				</td>
+			</tr>
+			<tr>
+				<td>Brand</td>
+				<td>
+					<input id="item_brand" style="width: 512px;" type="text"/>
+				</td>
+			</tr>
+			<tr></tr>
+			<tr></tr>
+			<tr></tr>
+			<tr>
+				<td>Description</td>
+				<td style="height: 256px; width: 512px;">
+						<textarea id="item_desc" style="width: 512px; height: 256px; resize: none;"></textarea>
+				</td>
+			</tr>
+			<tr></tr>
+			<tr></tr>
+			<tr></tr>
+			<tr>
+				<td>Quantity</td>
+				<td>
+					<input id="item_count" style="width: 512px;" type="text"/>
+				</td>
+			</tr>
+			<tr></tr>
+			<tr></tr>
+			<tr></tr>
+			<tr>
+				<td>Price</td>
+				<td>
+					<input id="item_price" style="width: 512px;" type="text"/>
+				</td>
+			</tr>
+			<tr></tr>
+			<tr></tr>
+			<tr></tr>
+			<tr>
+				<td>Image</td>
+				<td>
+					<input id="image_base64" type="file" style="width: 512px;" id="image_base64" accept="image/png, image/jpeg"/>
+				</td>
+			</tr>
+			</table>
+		</div>
+		<br/>
+		<input type="button" value="Add Item" onclick="add()">
+	</form>
+</body>
+</html>

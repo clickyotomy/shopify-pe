@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="utf-8">
+	<title>Shopify: Inventory List</title>
+	<style>
+		button.updn {
+			background: none;
+			border: none;
+			width: 5px;
+		}
+
+		table, th, td {
+			border: 1px solid black;
+			text-align: center;
+		}
+
+	</style>
+	<script type="text/javascript">
+		function clear() {
+			var result = document.querySelector('table[id=results]');
+			result.innerHTML = "<tr></tr>";
+		}
+
+		function handle(response) {
+			if (!response.ok) {
+				throw Error(response.json());
+			}
+			return response.json();
+		}
+
+        function list(orderBy, order) {
+        	var url = new URL("http://localhost:8080/api/list");
+        	if (orderBy && order) {
+            	url = new URL(`http://localhost:8080/api/list?order_by=${orderBy}&order=${order}`);
+            }
+
+            fetch(url, {
+                method: 'GET',
+            })
+            .then(handle)
+            .then(data => {
+                result = document.querySelector('table[id=items_table]');
+                result.innerHTML = print(data, 'list', false);
+            })
+            .catch(error => {
+                result = document.querySelector('table[id=results]');
+                result.innerHTML = print(error, 'list', true);
+            });
+        }
+
+        function print(resp, action, err) {
+        	var out = "";
+        	if (err === true) {
+        		return "<p>Unable to fetch response from API.</p>"
+        	}
+
+        	if (action === "list") {
+        		out += `<tr><th></th><th>ID</th><th>Item</th><th>Price</th><th>Quantity</th><th>Brand</th>`+
+        			   `<th>Created <button class="updn" onclick="list('created_at', 'asc')">&#8673;</button>`+
+        			   `<button class="updn" onclick="list('created_at', 'desc')">&#8675;</button>`+
+        			   `<th>Updated <button class="updn" onclick="list('updated_at', 'asc')">&#8673;</button>`+
+        			   `<button class="updn" onclick="list('created_at', 'desc')">&#8675;</button></th></tr>`;
+				for (const i in resp.data) {
+					row = resp.data[i];
+					crDate = new Date(resp.data[i].created_at).toISOString();
+					upDate = new Date(resp.data[i].updated_at).toISOString();
+					tableRow = `<tr>`;
+					tableRow += `<td><a href="http://localhost:8000/item?item_id=${row.item_id}" `+
+								`target="_blank" rel="noopener noreferrer">`+
+								`<img src="http://localhost:8080/img/${row.item_id}?h=72&w=64"/></a></td>`;
+					tableRow += `<td >${row.item_id}</td>`;
+					tableRow += `<td>${row.item_name}</td>`;
+					tableRow += `<td>${row.item_price}</td>`;
+					tableRow += `<td>${row.item_count}</td>`;
+					tableRow += `<td>${row.item_brand}</td>`;
+					tableRow += `<td>${crDate}</td>`;
+					tableRow += `<td>${upDate}</td>`;
+					tableRow += "</tr>"
+					out += tableRow;
+				}
+				return out;
+        	}
+        }
+	</script>
+</head>
+<body onload="list()">
+	<h2 width="1024px">Shopify: Item Inventory</h2>
+	<a href="/"><button style="width: 128px;">Refresh List</button></a>&nbsp;
+	<a href="/add" target="_blank" rel="noopener noreferrer"><button style="width: 128px;">Add Item</button></a>&nbsp;
+	<br/>
+	<br/>
+	<table id="items_table" style="width: 750px; "></table>
+</body>
+</html>

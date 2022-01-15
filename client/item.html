@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="utf-8">
+	<title id="item_name"></title>
+	<style>
+		button.updn {
+			background: none;
+			border: none;
+			width: 5px;
+		}
+
+		table, th, td {
+			border: 1px solid black;
+			text-align: left;
+			vertical-align: top;
+		}
+
+	</style>
+	<script type="text/javascript">
+		function clear() {
+			var result = document.querySelector('table[id=results]');
+			result.innerHTML = "<tr></tr>";
+		}
+
+		function handle(response) {
+			if (!response.ok) {
+				throw Error(response.json());
+			}
+			return response.json();
+		}
+
+        function show() {
+        	const urlParams = new URLSearchParams(window.location.search);
+        	const itemID = urlParams.get('item_id');
+
+        	var url = new URL(`http://localhost:8080/api/get/${itemID}`);
+            fetch(url, {
+                method: 'GET',
+            })
+            .then(handle)
+            .then(data => {
+            	var resp = data.data;
+            	var itemTitle = document.querySelector("title[id=item_name]");
+            	itemTitle.innerHTML = `Shopify: ${resp.item_name}`;
+            	itemTitle = document.querySelector("h2[id=item_title]");
+            	itemTitle.innerHTML = `${resp.item_name} (ID: ${resp.item_id})`;
+
+            	imageDisp = document.querySelector("img[id=item_image]");
+            	imageDisp.src = `http://localhost:8080/img/${itemID}?h=256&w=256`;
+
+            	var imageOrig = document.querySelector("a[id=item_image_original]");
+            	imageOrig.href = `http://localhost:8080/img/${itemID}`;
+
+            	var imageThumb256 = document.querySelector("a[id=item_image_128px]");
+            	imageThumb256.href = `http://localhost:8080/img/${itemID}?h=128&w=128`;
+
+				var imageThumb720 = document.querySelector("a[id=item_image_720px]");
+            	imageThumb720.href = `http://localhost:8080/img/${itemID}?h=720&w=720`;
+
+            	var imageThumb1024 = document.querySelector("a[id=item_image_1024px]");
+            	imageThumb1024.href = `http://localhost:8080/img/${itemID}?h=1024&w=1024`;
+
+            	var itemDesc = document.querySelector("textarea[id=item_desc]");
+            	itemDesc.value = resp.item_desc;
+
+            	var itemPrice = document.querySelector("input[id=item_price]");
+            	itemPrice.value = resp.item_price;
+    
+            	var itemCount = document.querySelector("input[id=item_count]");
+            	itemCount.value = resp.item_count;
+
+            	var itemBrand = document.querySelector("td[id=item_brand]");
+				itemBrand.innerHTML = resp.item_brand;
+
+            	var itemTime = document.querySelector("td[id=item_created_at]");
+            	itemTime.innerHTML = new Date(resp.created_at);
+            	itemTime = document.querySelector("td[id=item_updated_at]");
+            	itemTime.innerHTML = new Date(resp.updated_at);
+            })
+            .catch(error => {
+            	console.log(error);
+            });
+        }
+
+        function uploadImageBase64(field, url) {
+        	var file = document.querySelector('input[id="image_base64"]').files[0];
+			var reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = function () {
+				var payload = {};
+				console.log(reader.result.split(',')[1]);
+				payload[field] = reader.result.split(',')[1];
+	            fetch(url, {
+	                method: 'PUT',
+	                body: JSON.stringify(payload),
+	                headers: {
+	                	'Origin': 'localhost',
+	                }
+	            })
+	            .then(handle)
+	            .then(data => {
+	            	window.location.reload();
+	            })
+	            .catch(error => {
+	            	console.log(error);
+	            });
+			};
+
+			reader.onerror = function (error) {
+				console.log(error);
+			};
+        }
+
+        function update(field, func) {
+        	const urlParams = new URLSearchParams(window.location.search);
+        	const itemID = urlParams.get('item_id');
+
+        	var url = new URL(`http://localhost:8080/api/update/${itemID}?update_field=${field}`);
+        	var payload = {}
+        	if (field === 'image_base64') {
+        		uploadImageBase64(field, url)
+        	} else {
+        		payload[field] = func(document.getElementById(field).value);
+	            fetch(url, {
+	                method: 'PUT',
+	                body: JSON.stringify(payload),
+	                headers: {
+	                	'Origin': 'localhost',
+	                }
+	            })
+	            .then(handle)
+	            .then(data => {
+	            	window.location.reload();
+	            })
+	            .catch(error => {
+	            	console.log(error);
+	            });
+	        }
+        }
+
+        function nix() {
+        	const urlParams = new URLSearchParams(window.location.search);
+        	const itemID = urlParams.get('item_id');
+
+        	var url = new URL(`http://localhost:8080/api/delete/${itemID}`);
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                	'Origin': 'localhost',
+                }
+            })
+            .then(handle)
+            .then(data => {
+            	window.location.replace('http://localhost:8000/');
+            })
+            .catch(error => {
+            	console.log(error);
+            });        	
+        }
+	</script>
+</head>
+<body onload="show()">
+	<h2 id="item_title" style="width: 1536px;"></h2>
+	<p><a href="/">Home</a></p>
+	<div>
+		<div class="item_image_holder" style="width: 256px; display: inline-block; vertical-align: top;">
+			<img id="item_image" style="vertical-align: top;" src=""/>
+			</br>
+			[<a id="item_image_original" href="" target="_blank" rel="noopener noreferrer">Original</a>]
+			[<a id="item_image_128px" href="" target="_blank" rel="noopener noreferrer">128px</a>]
+			[<a id="item_image_720px" href="" target="_blank" rel="noopener noreferrer">720px</a>]
+			[<a id="item_image_1024px" href="" target="_blank" rel="noopener noreferrer">1024px</a>]
+			</br>
+			<form>
+				<input type="file" id="image_base64" accept="image/png, image/jpeg"/>
+				<input type="button" value="Update" onclick="update('image_base64', String)">
+			</form>
+
+		</div>
+		<div class="item_info_holder" style="width: 1024px; display: inline-block;">
+			<table>
+			<tr>
+				<td>Description</td>
+				<td style="height: 256px; width: 512px;">
+					<form>
+						<textarea id="item_desc" style="width: 512px; height: 220px; resize: none;" value=""></textarea>
+						<input type="button" value="Update" onclick="update('item_desc', String)">
+					</form>
+				</td>
+			</tr>
+			<tr>
+				<td>Quantity</td>
+				<td>
+					<form>
+						<input id="item_count" type="text" value=""/>
+						<input type="button" value="Update" onclick="update('item_count', parseInt)">
+					</form>
+				</td>
+			</tr>
+			<tr>
+				<td>Price</td>
+				<td>
+					<form>
+						<input id="item_price" type="text" value=""/>
+						<input type="button" value="Update" onclick="update('item_price', parseFloat)">
+					</form>
+				</td>
+			</tr>
+			<tr><td>Brand</td><td id="item_brand"></td></tr>
+			<tr><td>Created At</td><td id="item_created_at"></td></tr>
+			<tr><td>Updated At</td><td id="item_updated_at"></td></tr>
+			<tr><td>Delete Item</td><td><input type="button" value="Remove" onclick="nix()"></td></tr>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

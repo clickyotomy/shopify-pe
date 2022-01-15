@@ -16,6 +16,3 @@ vendor/
 
 # Go workspace file.
 go.work
-
-# Environment for `docker-compose'.
-.env

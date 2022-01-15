@@ -55,7 +55,7 @@ func main() {
 	defer db.Close()
 
 	if err = db.Ping(); err != nil {
-		log.Fatalf("db: database pinf failed %v", err)
+		log.Fatalf("db: database ping failed %v", err)
 	}
 
 	// Setup the router.

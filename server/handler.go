@@ -329,6 +329,7 @@ func updateHandler(ctx *gin.Context) {
 		dbConn      *sqlx.DB
 		dbTx        *sql.Tx
 		dbStmt      *sqlx.Stmt
+		dbRes       sql.Result
 		mux         *sync.Mutex
 		imgBuff     []byte
 		imgMIME     *mimetype.MIME
@@ -342,6 +343,7 @@ func updateHandler(ctx *gin.Context) {
 		upVal       interface{}
 		currUnix    time.Time
 		currLoc     *time.Location
+		tmp         int64
 	)
 
 	if dbConn, err = ensureDbMiddleware(ctx); err != nil {
@@ -434,16 +436,16 @@ func updateHandler(ctx *gin.Context) {
 
 		switch reflect.TypeOf(upVal).Kind() {
 		case reflect.String:
-			_, err = dbStmt.Exec(
+			dbRes, err = dbStmt.Exec(
 				upVal.(string), currUnix, itemURI.ItemID,
 			)
 		case reflect.Uint64:
-			_, err = dbStmt.Exec(
+			dbRes, err = dbStmt.Exec(
 				upVal.(uint64), currUnix, itemURI.ItemID,
 			)
 		case reflect.Float64:
 			log.Println("float")
-			_, err = dbStmt.Exec(
+			dbRes, err = dbStmt.Exec(
 				upVal.(float64), currUnix, itemURI.ItemID,
 			)
 		default:
@@ -473,6 +475,21 @@ func updateHandler(ctx *gin.Context) {
 				Error: "Internal Server Error",
 			})
 			dbTx.Rollback()
+			return
+		}
+
+		if tmp, err = dbRes.RowsAffected(); err != nil {
+			log.Printf("db: failed to fetch query result: %v", err)
+			ctx.JSON(http.StatusInternalServerError, apiResponse{
+				Error: "Internal Server Error",
+			})
+			return
+		}
+
+		if tmp <= 0 {
+			ctx.JSON(http.StatusNotFound, apiResponse{
+				Error: "Item Not Found",
+			})
 			return
 		}
 
